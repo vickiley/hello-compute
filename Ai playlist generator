@@ -1,0 +1,42 @@
+const express = require("express");
+const fetch = require("node-fetch");
+const app = express();
+const cors = require("cors");
+
+app.use(cors());
+app.use(express.json());
+
+const OPENAI_API_KEY = "sk-proj-..."; // << YOUR ChatGPT API key
+
+app.post("/api/playlist", async (req, res) => {
+  const mood = req.body.mood || "chill";
+
+  const prompt = `
+Act as a music expert and create a playlist of 10 trending songs for the mood: "${mood}".
+Include global hits from YouTube, Spotify, and Apple Music.
+Format:
+1. Song - Artist (Genre)
+`;
+
+  const chatRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You are a playlist creator." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.8,
+      max_tokens: 500,
+    }),
+  });
+
+  const data = await chatRes.json();
+  res.send({ playlist: data.choices[0].message.content });
+});
+
+app.listen(3000, () => console.log("AI Playlist server running"));
